@@ -99,13 +99,11 @@ func f7(ctx *dag.Context) {
 	v[6] = 1
 	println("f7")
 }
-
 func fa(ctx *dag.Context) {
 	d := dag.New()
 	d.Pipeline(t1).Then().Spawns(t2, tb).Join().Pipeline(t4)
 	d.Run(ctx)
 }
-
 func fb(ctx *dag.Context) {
 	d := dag.New()
 	d.Spawns(t5, t1).Join().Pipeline(t3)

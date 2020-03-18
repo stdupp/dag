@@ -1,89 +1,125 @@
-dag has two main concept:
-1. **Pipeline** executes the functions sequentially and in order.
-2. **Spawns** executes the functions concurrently, so there is no ordering guarantee.
+dag executor has three main concept:
+1. pipeline executes the functions sequentially and in order.
+2. spawns executes the functions concurrently, so there is no ordering guarantee.
+3. same name task in one context only exec once.
 
-## Example 1
-![example1](images/1.png)  
+## Example
 ```Go
-d := dag.New()
-d.Pipeline(f1, f2, f3)
-d.Run()
-```
-In the above example, f1 starts first, and after completion, f2 starts then f3.  
-Full example : [examples/ex1/ex1.go](examples/ex1/ex1.go)
+//
+//                    +-----+
+//                    |     |
+//             +----->+  2  +------+
+//             |      |     |      |
+// +-----+     |      +-----+      |      +-----+
+// |     |     |                   |      |     |
+// |  1  +-----+                   +----->+  4  +-----------------+
+// |     |     |                   |      |     |                 |
+// +-----+     |                   |      +-----+                 v
+//             |      +-----+      |                           +--+--+
+//             |      |     |      |                           |     |
+//             +----->+  3  +------+                           |  7  |
+//                    |     |                                  |     |
+//                    +--+--+                                  +--+--+
+//                       ^                                        ^
+// +-----+               |                +-----+                 |
+// |     |               |                |     |                 |
+// |  5  +---------------+--------------->+  6  +-----------------+
+// |     |                                |     |
+// +-----+                                +-----+
+//
+//
 
-## Example 2
-![example2](images/2.png)  
-```Go
-d := dag.New()
-d.Spawns(f1, f2, f3)
-d.Run()
-```
-The order of execution of f1, f2 and f3 is *nondeterministic*  
-Full example : [examples/ex2/ex2.go](examples/ex2/ex2.go)
+// A workflow like this can be abstracted with the following code:
 
-## Example 3
-![example3](images/3.png)  
-In this example f4 must be executed after complition of f1, f2 and f3. You can use **Join** method:
-```Go
-d := dag.New()
-d.Spawns(f1, f2, f3).Join().Pipeline(f4)
-d.Run()
-```
-Full example : [examples/ex3/ex3.go](examples/ex3/ex3.go)
+package main
 
-## Example 4
-![example4](images/4.png)  
-After *pipeline* we can use **Then** method:
-```Go
-d := dag.New()
-d.Pipeline(f1, f2, f3).Then().Spawns(f4, f5, f6)
-d.Run()
-```
-Full example : [examples/ex4/ex4.go](examples/ex4/ex4.go)
+import (
+	"fmt"
 
-## Example 5
-![example5](images/5.png)  
-```Go
-d := dag.New()
-d.Spawns(f1, f2, f3).
-	Join().
-	Pipeline(f4, f5).
-	Then().
-	Spawns(f6, f7, f8)
-d.Run()
-```
-Full example : [examples/ex5/ex5.go](examples/ex5/ex5.go)
+	"github.com/stdupp/dag"
+)
 
-## Example 6
-![example6](images/6.png)  
-We want to execute two pipeline concrrently, we can use **pipeline.Of** inside the *Spawns* method:
-```Go
-d := dag.New()
-d.Spawns(pipeline.Of(f1, f3), pipeline.Of(f2, f4)).
-	Join().
-	Pipeline(f5)
-d.Run()
-```
-Full example : [examples/ex6/ex6.go](examples/ex6/ex6.go)
+type Task struct {
+	N string
+	F func(*dag.Context)
+}
 
-## Example 7
-We can use **OnComplete** method after *Pipeline* or *Spawns* to notify when functions has completed.
-```Go
-d := dag.New()
-d.Pipeline(f1, f2).OnComplete(f3).
-	  Then().
-  Spawns(f1, f2).OnComplete(f4)
-d.Run()
-```
-Full example : [examples/ex7/ex7.go](examples/ex7/ex7.go)
+func (t *Task) Name() string {
+	return t.N
+}
+func (t *Task) Process(ctx *dag.Context) {
+	t.F(ctx)
+}
 
-## Example 8
-Basically, Run() will block until all functions are done. If you don't want to be blocked, you can use RunAsync() method. It
- accepts a callback function, that will be called when all functions are done.
- ```Go	
- d := dag.New()
- d.Pipeline(f1, f2).Then().Spawns(f3, f4)
- d.RunAsync(onComplete)
- ```
-Full example : [examples/ex8/ex8.go](examples/ex8/ex8.go)
+var t1, t2, t3, t4, t5, t6, t7, ta, tb *Task
+
+func main() {
+	t1 = &Task{"1", f1}
+	t2 = &Task{"2", f2}
+	t3 = &Task{"3", f3}
+	t4 = &Task{"4", f4}
+	t5 = &Task{"5", f5}
+	t6 = &Task{"6", f6}
+	t7 = &Task{"7", f7}
+
+	ta = &Task{"", fa}
+	tb = &Task{"", fb}
+
+	ctx := &dag.Context{Item: make([]int, 7)}
+	d := dag.New()
+	d.Spawns(ta, dag.Combine(t5, t6)).
+		Join().
+		Pipeline(t7)
+	d.Run(ctx)
+
+	fmt.Println(ctx.Item)
+}
+
+func f1(ctx *dag.Context) {
+	v := ctx.Item.([]int)
+	v[0] = 1
+	println("f1")
+}
+func f2(ctx *dag.Context) {
+	v := ctx.Item.([]int)
+	v[1] = 1
+	println("f2")
+}
+func f3(ctx *dag.Context) {
+	v := ctx.Item.([]int)
+	v[2] = 1
+	println("f3")
+}
+func f4(ctx *dag.Context) {
+	v := ctx.Item.([]int)
+	v[3] = 1
+	println("f4")
+}
+func f5(ctx *dag.Context) {
+	v := ctx.Item.([]int)
+	v[4] = 1
+	println("f5")
+}
+func f6(ctx *dag.Context) {
+	v := ctx.Item.([]int)
+	v[5] = 1
+	println("f6")
+}
+func f7(ctx *dag.Context) {
+	v := ctx.Item.([]int)
+	v[6] = 1
+	println("f7")
+}
+func fa(ctx *dag.Context) {
+	d := dag.New()
+	d.Pipeline(t1).Then().Spawns(t2, tb).Join().Pipeline(t4)
+	d.Run(ctx)
+}
+func fb(ctx *dag.Context) {
+	d := dag.New()
+	d.Spawns(t5, t1).Join().Pipeline(t3)
+	d.Run(ctx)
+}
+
+```
+
