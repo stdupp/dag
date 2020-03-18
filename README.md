@@ -1,4 +1,7 @@
-dag executor has three main concept:
+# DAG Executor
+This repository is inspired by [mostafa-asg/dag](https://github.com/mostafa-asg/dag).
+
+DAG executor has three main concept:
 1. pipeline executes the functions sequentially and in order.
 2. spawns executes the functions concurrently, so there is no ordering guarantee.
 3. same name task in one context only exec once.
