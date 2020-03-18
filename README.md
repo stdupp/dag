@@ -54,19 +54,36 @@ func (t *Task) Process(ctx *dag.Context) {
 	t.F(ctx)
 }
 
-var t1, t2, t3, t4, t5, t6, t7, ta, tb *Task
+func f(name string, i int) func(*dag.Context) {
+	return func(ctx *dag.Context) {
+		v := ctx.Item.([]int)
+		v[i] = 1
+		println(name)
+	}
+}
 
 func main() {
-	t1 = &Task{"1", f1}
-	t2 = &Task{"2", f2}
-	t3 = &Task{"3", f3}
-	t4 = &Task{"4", f4}
-	t5 = &Task{"5", f5}
-	t6 = &Task{"6", f6}
-	t7 = &Task{"7", f7}
+	t1 := &Task{"1", f("f1", 0)}
+	t2 := &Task{"2", f("f2", 1)}
+	t3 := &Task{"3", f("f3", 2)}
+	t4 := &Task{"4", f("f4", 3)}
+	t5 := &Task{"5", f("f5", 4)}
+	t6 := &Task{"6", f("f6", 5)}
+	t7 := &Task{"7", f("f7", 6)}
 
-	ta = &Task{"", fa}
-	tb = &Task{"", fb}
+	fb := func(ctx *dag.Context) {
+		d := dag.New()
+		d.Spawns(t5, t1).Join().Pipeline(t3)
+		d.Run(ctx)
+	}
+	tb := &Task{"", fb}
+
+	fa := func(ctx *dag.Context) {
+		d := dag.New()
+		d.Pipeline(t1).Then().Spawns(t2, tb).Join().Pipeline(t4)
+		d.Run(ctx)
+	}
+	ta := &Task{"", fa}
 
 	ctx := &dag.Context{Item: make([]int, 7)}
 	d := dag.New()
@@ -76,52 +93,6 @@ func main() {
 	d.Run(ctx)
 
 	fmt.Println(ctx.Item)
-}
-
-func f1(ctx *dag.Context) {
-	v := ctx.Item.([]int)
-	v[0] = 1
-	println("f1")
-}
-func f2(ctx *dag.Context) {
-	v := ctx.Item.([]int)
-	v[1] = 1
-	println("f2")
-}
-func f3(ctx *dag.Context) {
-	v := ctx.Item.([]int)
-	v[2] = 1
-	println("f3")
-}
-func f4(ctx *dag.Context) {
-	v := ctx.Item.([]int)
-	v[3] = 1
-	println("f4")
-}
-func f5(ctx *dag.Context) {
-	v := ctx.Item.([]int)
-	v[4] = 1
-	println("f5")
-}
-func f6(ctx *dag.Context) {
-	v := ctx.Item.([]int)
-	v[5] = 1
-	println("f6")
-}
-func f7(ctx *dag.Context) {
-	v := ctx.Item.([]int)
-	v[6] = 1
-	println("f7")
-}
-func fa(ctx *dag.Context) {
-	d := dag.New()
-	d.Pipeline(t1).Then().Spawns(t2, tb).Join().Pipeline(t4)
-	d.Run(ctx)
-}
-func fb(ctx *dag.Context) {
-	d := dag.New()
-	d.Spawns(t5, t1).Join().Pipeline(t3)
-	d.Run(ctx)
 }
 
 ```
