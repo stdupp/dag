@@ -33,11 +33,11 @@ func main() {
 	tb = &Task{"", spawnb}
 
 	ctx := &dag.Context{Item: make([]int, 7)}
-	d := dag.New(ctx)
+	d := dag.New()
 	d.Spawns(ta, dag.Combine(t5, t6)).
 		Join().
 		Pipeline(t7)
-	d.Run()
+	d.Run(ctx)
 
 	fmt.Println(ctx.Item)
 }
@@ -79,13 +79,13 @@ func f7(ctx *dag.Context) {
 }
 
 func spawn(ctx *dag.Context) {
-	d := dag.New(ctx)
+	d := dag.New()
 	d.Pipeline(t1).Then().Spawns(t2, tb).Join().Pipeline(t4)
-	d.Run()
+	d.Run(ctx)
 }
 
 func spawnb(ctx *dag.Context) {
-	d := dag.New(ctx)
+	d := dag.New()
 	d.Spawns(t5, t1).Join().Pipeline(t3)
-	d.Run()
+	d.Run(ctx)
 }

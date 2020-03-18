@@ -9,14 +9,12 @@ type Context struct {
 
 // Dag represents directed acyclic graph
 type Dag struct {
-	Ctx  *Context
 	jobs []*Job
 }
 
 // New creates new DAG
-func New(ctx *Context) *Dag {
+func New() *Dag {
 	return &Dag{
-		Ctx:  ctx,
 		jobs: make([]*Job, 0),
 	}
 }
@@ -32,20 +30,20 @@ func (dag *Dag) lastJob() *Job {
 
 // Run starts the tasks
 // It will block until all functions are done
-func (dag *Dag) Run() {
+func (dag *Dag) Run(ctx *Context) {
 	for _, job := range dag.jobs {
 		if job.sequential {
-			runSync(dag.Ctx, job)
+			runSync(ctx, job)
 		} else {
-			runAsync(dag.Ctx, job)
+			runAsync(ctx, job)
 		}
 	}
 }
 
 // RunAsync executes Run on another goroutine
-func (dag *Dag) RunAsync(onComplete func()) {
+func (dag *Dag) RunAsync(ctx *Context, onComplete func()) {
 	go func() {
-		dag.Run()
+		dag.Run(ctx)
 		if onComplete != nil {
 			onComplete()
 		}
