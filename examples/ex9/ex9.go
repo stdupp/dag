@@ -18,6 +18,28 @@ func (t *Task) Process(ctx *dag.Context) {
 	t.F(ctx)
 }
 
+// A workflow like this
+//                    +-----+
+//                    |     |
+//             +----->+  2  +------+
+//             |      |     |      |
+// +-----+     |      +-----+      |      +-----+
+// |     |     |                   |      |     |
+// |  1  +-----+                   +----->+  4  +-----------------+
+// |     |     |                   |      |     |                 |
+// +-----+     |                   |      +-----+                 v
+//             |      +-----+      |                           +--+--+
+//             |      |     |      |                           |     |
+//             +----->+  3  +------+                           |  7  |
+//                    |     |                                  |     |
+//                    +--+--+                                  +--+--+
+//                       ^                                        ^
+// +-----+               |                +-----+                 |
+// |     |               |                |     |                 |
+// |  5  +---------------+--------------->+  6  +-----------------+
+// |     |                                |     |
+// +-----+                                +-----+
+//
 var t1, t2, t3, t4, t5, t6, t7, ta, tb *Task
 
 func main() {
@@ -29,8 +51,8 @@ func main() {
 	t6 = &Task{"6", f6}
 	t7 = &Task{"7", f7}
 
-	ta = &Task{"", spawn}
-	tb = &Task{"", spawnb}
+	ta = &Task{"", fa}
+	tb = &Task{"", fb}
 
 	ctx := &dag.Context{Item: make([]int, 7)}
 	d := dag.New()
@@ -78,13 +100,13 @@ func f7(ctx *dag.Context) {
 	println("f7")
 }
 
-func spawn(ctx *dag.Context) {
+func fa(ctx *dag.Context) {
 	d := dag.New()
 	d.Pipeline(t1).Then().Spawns(t2, tb).Join().Pipeline(t4)
 	d.Run(ctx)
 }
 
-func spawnb(ctx *dag.Context) {
+func fb(ctx *dag.Context) {
 	d := dag.New()
 	d.Spawns(t5, t1).Join().Pipeline(t3)
 	d.Run(ctx)
