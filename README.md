@@ -56,7 +56,7 @@ func (t *Task) Process(ctx *dag.Context) {
 
 func f(name string, i int) func(*dag.Context) {
 	return func(ctx *dag.Context) {
-		v := ctx.Item.([]int)
+		v := ctx.Data.([]int)
 		v[i] = 1
 		println(name)
 	}
@@ -85,14 +85,14 @@ func main() {
 	}
 	ta := &Task{"", fa}
 
-	ctx := &dag.Context{Item: make([]int, 7)}
+	ctx := &dag.Context{Data: make([]int, 7)}
 	d := dag.New()
 	d.Spawns(ta, dag.Combine(t5, t6)).
 		Join().
 		Pipeline(t7)
 	d.Run(ctx)
 
-	fmt.Println(ctx.Item)
+	fmt.Println(ctx.Data)
 }
 
 ```

@@ -4,7 +4,7 @@ import "sync"
 
 type Context struct {
 	taskMap sync.Map
-	Item    interface{} // user data
+	Data    interface{} // user data
 }
 
 // Dag represents directed acyclic graph
